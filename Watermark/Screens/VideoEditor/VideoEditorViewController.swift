@@ -67,10 +67,32 @@ final class VideoEditorViewController: UIViewController {
 	private lazy var opacityButton: UIButton = {
 		let button = UIButton()
 		button.translatesAutoresizingMaskIntoConstraints = false
+		button.isHidden = true
 		button.setImage(UIImage(named: "opacity"), for: .normal)
 		button.imageView?.contentMode = .scaleAspectFit
 		button.addTarget(self, action: #selector(didPressOpacityButton), for: .touchUpInside)
 		return button
+	}()
+	
+	private lazy var editingStackView: UIStackView = {
+		let stackView = UIStackView(arrangedSubviews: [playbackControlButton, soundButton, opacityButton])
+		stackView.distribution = .fillEqually
+		stackView.spacing = 10
+		stackView.axis = .horizontal
+		stackView.translatesAutoresizingMaskIntoConstraints = false
+		return stackView
+	}()
+	
+	private lazy var opacitySlider: UISlider = {
+		let slider = UISlider()
+		slider.translatesAutoresizingMaskIntoConstraints = false
+		slider.isHidden = true
+		slider.addTarget(self, action: #selector(didChangeSlider), for: .valueChanged)
+		slider.tintColor = Colors.primaryPink
+		slider.maximumValue = 1
+		slider.minimumValue = 0
+		slider.value = 1
+		return slider
 	}()
 	
 	private var labelWatermark: UILabel?
@@ -142,9 +164,8 @@ private extension VideoEditorViewController {
 		view.addSubview(navigationView)
 		view.addSubview(videoView)
 		view.addSubview(editingContainerView)
-		editingContainerView.addSubview(playbackControlButton)
-		editingContainerView.addSubview(soundButton)
-		
+		view.addSubview(editingStackView)
+		view.addSubview(opacitySlider)
 		
 		NSLayoutConstraint.activate([
 			navigationView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -162,15 +183,21 @@ private extension VideoEditorViewController {
 			editingContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 			editingContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 			
-			playbackControlButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-			playbackControlButton.topAnchor.constraint(equalTo: editingContainerView.topAnchor, constant: 10),
+			editingStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+			editingStackView.topAnchor.constraint(equalTo: editingContainerView.topAnchor, constant: 16),
+			
+			opacitySlider.leadingAnchor.constraint(equalTo: editingStackView.trailingAnchor, constant: 16),
+			opacitySlider.topAnchor.constraint(equalTo: editingContainerView.topAnchor, constant: 10),
+			opacitySlider.trailingAnchor.constraint(equalTo: editingContainerView.trailingAnchor, constant: -16),
+			
 			playbackControlButton.heightAnchor.constraint(equalToConstant: 20),
 			playbackControlButton.widthAnchor.constraint(equalToConstant: 20),
 			
-			soundButton.leadingAnchor.constraint(equalTo: playbackControlButton.trailingAnchor, constant: 16),
-			soundButton.topAnchor.constraint(equalTo: editingContainerView.topAnchor, constant: 10),
 			soundButton.heightAnchor.constraint(equalToConstant: 20),
 			soundButton.widthAnchor.constraint(equalToConstant: 20),
+			
+			opacityButton.heightAnchor.constraint(equalToConstant: 20),
+			opacityButton.widthAnchor.constraint(equalToConstant: 20),
 		])
 	}
 	
@@ -230,11 +257,19 @@ private extension VideoEditorViewController {
 	
 	// MARK: - Adding watermark
 	func addTextWatermark() {
+		// reset
+		labelWatermark?.removeFromSuperview()
+		labelWatermark = nil
+		opacityButton.isHidden = true
+		opacitySlider.isHidden = true
+		
+		// setup
 		labelWatermark = UILabel()
-		labelWatermark?.text = "Test Text"
+		labelWatermark?.text = "Tap text here"
 		labelWatermark?.textColor = .white
 		labelWatermark?.textAlignment = .center
-		labelWatermark?.font = .systemFont(ofSize: 18, weight: .semibold)
+		opacityButton.isHidden = false
+		labelWatermark?.font = .systemFont(ofSize: 20, weight: .semibold)
 		labelWatermark?.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
 		labelWatermark?.center = videoView.convert(videoView.center, from: view)
 		labelWatermark?.isUserInteractionEnabled = true
@@ -269,7 +304,11 @@ private extension VideoEditorViewController {
 	}
 	
 	func didPressOpacityButton() {
-		
+		opacitySlider.isHidden.toggle()
+	}
+	
+	func didChangeSlider() {
+		labelWatermark?.layer.opacity = opacitySlider.value
 	}
 	
 	func didPanWatermark(_ gesture: UIPanGestureRecognizer) {
